@@ -5,19 +5,19 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <ezBuzzer.h>
-#include <"Mole.h">
+#include "Mole.h"
 
 // KEYS
-#define ROW_COUNT  3
-#define COL_COUNT  3
-const byte row_pins[ROW_COUNT] {4, 16, 17}
-const byte col_pins[COL_COUNT] {18, 19, 23}
-char keys[ROW_COUNT][COL_COUNT] {
+const byte row_count = 3;
+const byte col_count = 3;
+byte row_pins[row_count] = {4, 16, 17};
+byte col_pins[col_count] = {18, 19, 23};
+char keys[row_count][col_count] = {
   {'1', '2', '3'},
   {'4', '5', '6'},
   {'7', '8', '9'},
-}
-Keypad keypad = Keypad( makeKeymap(keys), row_pins, col_pina, ROW_COUNT, COL_COUNT );
+};
+Keypad keypad = Keypad(makeKeymap(keys), row_pins, col_pins, row_count, col_count);
 
 // OLED
 #define SDA_PIN 21
@@ -45,8 +45,10 @@ void setup() {
   delay(3000); // power on safety delay
 
   // LED SETUP
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, LED_COUNT);
   FastLED.setBrightness(BRIGHTNESS);
+  FastLED.clear();
+  FastLED.show();
 
   // OLED SETUP
   display.display(); // shows adafruit splash
@@ -58,8 +60,8 @@ void setup() {
 }
 
 void loop() {
-  // char key = keypad.getKey();
-  // if (key != NO_KEY){
-  //   Serial.println(key); 
-  Mole().run(); 
+  buzzer.loop(); // MUST call the buzzer.loop() function in loop()
+  
+  Mole mole = Mole(keypad, leds, buzzer, display);
+  mole.run(); 
 }
