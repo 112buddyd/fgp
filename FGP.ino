@@ -5,44 +5,69 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Vector.h>
-#include "pitches.h"
-
 
 // KEYS
 const byte row_count = 3;
-const byte col_count = 3;
-byte row_pins[row_count] = {4, 16, 17};
-byte col_pins[col_count] = {19, 18, 23};
+const byte col_count = 4;
+byte row_pins[row_count] = {4, 5, A3};
+byte col_pins[col_count] = {6, 7, 8, 9};
 char keys[row_count][col_count] = {
-  {'2', '3', '8'},
-  {'1', '4', '7'},
-  {'0', '5', '6'}
+  {'1', '2', '3', '4'}, 
+  {'5', '6', '7', '8'},
+  {'9', '0', 'A', 'B'},
 };
 Keypad keypad = Keypad(makeKeymap(keys), row_pins, col_pins, row_count, col_count);
+
+int key_to_led(char key) {
+  switch (key) {
+    case '1':
+      return 1;
+    case '2':
+      return 2;
+    case '3':
+      return 3;
+    case '4':
+      return 4;
+    case '5':
+      return 5;
+    case '6':
+      return 6;
+    case '7':
+      return 7;
+    case '8':
+      return 8;
+    case '9':
+      return 9;
+    case '0':
+      return 10;
+    case 'A':
+      return 11;
+    case 'B':
+      return 12;
+  }
+}
 
 // OLED
 // #define SDA_PIN 21
 // #define SCL_PIN 22
 #define SCREEN_WIDTH 128 
-#define SCREEN_HEIGHT 32
+#define SCREEN_HEIGHT 64
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // LED
-#define LED_PIN 13
-#define LED_COUNT 9
+#define LED_PIN A2
+#define LED_COUNT 13
 #define BRIGHTNESS 40
 #define LED_TYPE WS2811 
 #define COLOR_ORDER GRB
-#define FPS 100
+#define FPS 30
 unsigned long lastFrame = 0;
 CRGB leds[LED_COUNT];
 CRGB colorOne = CRGB(0,255,0); // GREEN
 CRGB colorTwo = CRGB(255,0,0); // RED
 
-// BUZZER
-#define BUZZER_PIN 14
 
 // MOLE GAME
 int score = 0;
@@ -77,9 +102,8 @@ void renderMoles(){
   for (int i=0; i<LED_COUNT; i++) {
     if (mole_is_running(i)) {
       unsigned long delta = millis() - moleTimers[i];
-      leds[i].red = colorOne.red * (moleEscapeMs - delta) / moleEscapeMs + colorTwo.red *delta/ moleEscapeMs;
-      // leds[i].blue = colorOne[i].blue * (moleEscapeMs - delta) / moleEscapeMs + colorTwo[i].blue *delta/ moleEscapeMs;
-      leds[i].green = colorOne.green * (moleEscapeMs - delta) / moleEscapeMs + colorTwo.green *delta/ moleEscapeMs;
+      leds[i].red = colorOne.red * (moleEscapeMs - delta) / moleEscapeMs + colorTwo.red * delta/ moleEscapeMs;
+      leds[i].green = colorOne.green * (moleEscapeMs - delta) / moleEscapeMs + colorTwo.green * delta/ moleEscapeMs;
     } else {
       leds[i] = CRGB(0, 0, 0);
     }
@@ -101,7 +125,11 @@ void spawnRandomMole(){
   if (openPositions.size() == 0) {
     return;
   }
-  int randInt = random(openPositions.size());
+  int randInt = 0;
+  while (randInt == 0) {
+    // 0 is a special led and shouldn't be used in the game
+    randInt = random(openPositions.size());
+  }
   moleTimers[openPositions.at(randInt)] = millis();
 }
 void resetMole(int idx){
@@ -113,9 +141,8 @@ void checkForMoleHits(){
   // Get key and see if it matches an active mole
   char ckey = keypad.getKey();
   if (ckey == NO_KEY) {return;}
-  int key  = ckey - '0';
+  int key  = key_to_led(ckey);
   if (mole_is_running(key)) {
-    // tone(BUZZER_PIN, NOTE_C5, 250);
     hits++;
     score++;
     resetMole(key);
@@ -135,7 +162,6 @@ void checkForMoleEscapes(){
     }
   }
   if (escape) {
-      // tone(BUZZER_PIN, NOTE_C1, 250);
   }
   }
 
@@ -263,7 +289,7 @@ void drawNewGameScreen() {
 // END MOLE GAME
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   randomSeed(analogRead(0));
 
   // OLED SETUP
@@ -282,9 +308,6 @@ void setup() {
   FastLED.setBrightness(BRIGHTNESS);
   FastLED.clear();
   FastLED.show();
-
-  // BUZZER SETUP
-  pinMode(BUZZER_PIN, OUTPUT);
 
   displayStartup();
 }
